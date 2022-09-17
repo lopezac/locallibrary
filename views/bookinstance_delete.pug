@@ -1,0 +1,12 @@
+extends layout
+
+block content
+  h1 #{title}: ID #{bookinstance._id}
+  p #[strong Title:] 
+    a(href=bookinstance.url) #{bookinstance.book.title}
+  p #[strong Imprint:] #{bookinstance.imprint}
+  
+
+  p Do you want to really delete this Book Instance?
+  form(method="POST" action="")
+    button.btn.btn-danger(type="submit") Delete
