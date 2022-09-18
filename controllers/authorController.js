@@ -150,12 +150,70 @@ exports.author_delete_post = (req, res, next) => {
   );
 };
 
-// Display Author update form on GET.
-exports.author_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author update GET");
+// Display author update form on GET.
+exports.author_update_get = (req, res, next) => {
+  async.parallel(
+    {
+      author(callback) {
+        Author.findById(req.params.id).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) return next(err);
+      if (results.author == null) {
+        const err = new Error("author not found");
+        err.status = 404;
+        return next(err);
+      }
+      res.render("author_form", {
+        title: "Update Author",
+        author: results.author,
+      });
+    }
+  );
 };
 
-// Handle Author update on POST.
-exports.author_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author update POST");
-};
+exports.author_update_post = [
+  body("first_name", "First name must not be empty.")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("family_name", "Family name must not be empty.")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("date_of_birth", "Date of birth must not be empty.")
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .toDate(),
+  body("date_of_death", "Date of death must not be empty")
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .toDate(),
+  (req, res, next) => {
+    const errors = validationResult(req);
+
+    const author = new Author({
+      date_of_birth: req.body.date_of_birth,
+      date_of_death: req.body.date_of_death,
+      first_name: req.body.first_name,
+      family_name: req.body.family_name,
+      _id: req.params.id,
+    });
+
+    if (!errors.isEmpty()) {
+      res.render("author_form", {
+        title: "Update Author",
+        author: author,
+        errors: errors.array(),
+      });
+      return;
+    }
+
+    Author.findByIdAndUpdate(req.params.id, author, {}, (err, theauthor) => {
+      if (err) return next(err);
+
+      res.redirect(theauthor.url);
+    });
+  },
+];
